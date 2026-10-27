@@ -29,8 +29,10 @@ Windows 桌面端语音识别节点：WinForms 外壳（`AsrAgent.exe`）+ 内�
 ```powershell
 cd src
 powershell -NoProfile -ExecutionPolicy Bypass -File build_release.ps1 `
-  -Owner <你的GitHub用户名> -Repo <仓库名> -Tag v1.0.0
+  -Owner xinghuoseo -Repo asr-node -Tag v1.0.0
 ```
+
+便携 Python 会依次从 `-PyEmbedDir`、本机缓存 `runtime\pyembed\`、上次构建产物中查找，都没有时自动下载可嵌入版。
 
 脚本会编译 `AsrAgent.exe`、组装便携 Python 运行时（可嵌入版 + site-packages）、打包 VAD/说话人分离模型，
 再生成按需下载资源包并回填 `models.json` 的下载地址 / 大小 / sha256：
@@ -49,6 +51,9 @@ dist\AsrNode\                    未压缩主包（可直接运行调试）
 ```powershell
 gh release create v1.0.0 dist\AsrNode-core.zip dist\assets\*.zip -t "AsrNode v1.0.0"
 ```
+
+> 国内网络若 `github.com:443` 不通，可用镜像下载 core 包，或给 git 配 SSH over 443：
+> `git remote set-url origin git@github.com:xinghuoseo/asr-node.git`（`~/.ssh/config` 里把 github.com 指向 `ssh.github.com:443`）。
 
 ## 目录结构
 
