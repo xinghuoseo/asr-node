@@ -973,15 +973,19 @@ namespace AsrAgent
             _btnDelete.SetBounds(144, 24, 100, 30);
             _btnDelete.Click += delegate { DeleteSelected(); };
 
-            // 左: 记录列表   右: 分句详情
+            // 左: 记录列表(固定宽度)   右: 分句详情(随窗口变宽)
             var split = new SplitContainer();
             split.Orientation = Orientation.Vertical;
             split.SetBounds(16, 62, gRec.ClientSize.Width - 32, recH - 74);
             split.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-            split.Panel1MinSize = 300;
-            split.Panel2MinSize = 260;
-            int sp = (gRec.ClientSize.Width - 32) * 45 / 100;
-            if (sp < 300) sp = 300;
+            split.SplitterWidth = 6;
+            split.FixedPanel = FixedPanel.Panel1;
+            split.Panel1MinSize = 360;
+            split.Panel2MinSize = 360;
+            int spW = gRec.ClientSize.Width - 32;
+            int sp = 430;
+            if (sp > spW - 360 - split.SplitterWidth) sp = spW - 360 - split.SplitterWidth;
+            if (sp < 360) sp = 360;
             try { split.SplitterDistance = sp; } catch { }
 
             _lv = new ListView();
@@ -989,11 +993,11 @@ namespace AsrAgent
             _lv.FullRowSelect = true;
             _lv.HideSelection = false;
             _lv.Dock = DockStyle.Fill;
-            _lv.Columns.Add("时间", 130);
-            _lv.Columns.Add("来源", 56);
-            _lv.Columns.Add("文件", 230);
-            _lv.Columns.Add("时长(s)", 64);
-            _lv.Columns.Add("说话人", 60);
+            _lv.Columns.Add("时间", 112);
+            _lv.Columns.Add("来源", 44);
+            _lv.Columns.Add("文件", 148);
+            _lv.Columns.Add("时长(s)", 54);
+            _lv.Columns.Add("说话人", 54);
             _lv.SelectedIndexChanged += delegate { ShowRecordInPanel(); };
             _lv.DoubleClick += delegate { ShowRecordInPanel(); };
             split.Panel1.Controls.Add(_lv);
