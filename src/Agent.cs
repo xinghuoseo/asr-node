@@ -826,7 +826,7 @@ namespace AsrAgent
             if (sw - splitter - leftW < 400) leftW = sw - splitter - 400;
 
             int lh = sh;                                 // 左栏可用高度
-            int gModelH = 126, gConnH = 118, gLogH = 130, gap = 8;
+            int gModelH = 132, gConnH = 118, gLogH = 130, gap = 8;
             int recTop = gModelH + gap + gConnH + gap;
             int recH = lh - recTop - gap - gLogH;
 
@@ -849,8 +849,8 @@ namespace AsrAgent
             int mcw = gModel.ClientSize.Width;
 
             // 第一行 = [基础包] 识别模型 [下载该模型]
-            // 第二行 = [启动][停止] 状态 + 内存
-            // 第三行 = 自动启动 + 下载提示
+            // 第二行 = [启动][停止] + 下载提示
+            // 第三行 = 随程序自动启动 + 运行状态 + 内存
             _btnFfmpeg = new Button();
             _btnFfmpeg.Text = "基础包";
             _btnFfmpeg.SetBounds(12, 22, 92, 28);
@@ -891,39 +891,40 @@ namespace AsrAgent
 
             _btnStart = new Button();
             _btnStart.Text = "启动";
-            _btnStart.SetBounds(12, 56, 84, 28);
+            _btnStart.SetBounds(12, 54, 84, 28);
             _btnStart.Click += delegate { StartModel(); };
 
             _btnStop = new Button();
             _btnStop.Text = "停止";
-            _btnStop.SetBounds(102, 56, 84, 28);
+            _btnStop.SetBounds(102, 54, 84, 28);
             _btnStop.Click += delegate { StopModel(); };
-
-            _lblModel = new Label();
-            _lblModel.Text = "未运行";
-            _lblModel.AutoEllipsis = true;
-            _lblModel.TextAlign = ContentAlignment.MiddleLeft;
-            _lblModel.SetBounds(194, 56, mcw - 194 - 12 - 118, 28);
-            _lblModel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-            _lblGpu = new Label();
-            _lblGpu.Text = "内存: -";
-            _lblGpu.TextAlign = ContentAlignment.MiddleRight;
-            _lblGpu.SetBounds(mcw - 106 - 12, 56, 106, 28);
-            _lblGpu.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
-            _chkAutoModel = new CheckBox();
-            _chkAutoModel.Text = "随程序自动启动";
-            _chkAutoModel.SetBounds(12, 92, 132, 24);
-            _chkAutoModel.Checked = _cfg.auto_start_model;
-            _chkAutoModel.CheckedChanged += delegate { SaveConfig(); };
 
             _lblDl = new Label();
             _lblDl.ForeColor = Color.DimGray;
             _lblDl.AutoEllipsis = true;
             _lblDl.TextAlign = ContentAlignment.MiddleLeft;
-            _lblDl.SetBounds(148, 92, mcw - 160, 24);
+            _lblDl.SetBounds(194, 54, mcw - 206, 28);
             _lblDl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            _chkAutoModel = new CheckBox();
+            _chkAutoModel.Text = "随程序自动启动";
+            _chkAutoModel.SetBounds(12, 88, 132, 26);
+            _chkAutoModel.Checked = _cfg.auto_start_model;
+            _chkAutoModel.CheckedChanged += delegate { SaveConfig(); };
+
+            _lblModel = new Label();
+            _lblModel.Text = "未运行";
+            _lblModel.AutoEllipsis = true;
+            _lblModel.TextAlign = ContentAlignment.MiddleLeft;
+            _lblModel.SetBounds(144, 88, mcw - 144 - 122 - 20, 26);
+            _lblModel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            _lblGpu = new Label();
+            _lblGpu.Text = "内存: -";
+            _lblGpu.AutoEllipsis = true;
+            _lblGpu.TextAlign = ContentAlignment.MiddleRight;
+            _lblGpu.SetBounds(mcw - 122 - 12, 88, 122, 26);
+            _lblGpu.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             gModel.Controls.Add(_btnFfmpeg);
             gModel.Controls.Add(lblModelSel);
@@ -1589,7 +1590,7 @@ namespace AsrAgent
                 if (!string.IsNullOrEmpty(hm)) _currentModel = hm;
                 object memObj;
                 if (h.TryGetValue("mem_mb", out memObj))
-                    _lblGpu.Text = "模型内存: " + memObj + " MB";
+                    _lblGpu.Text = "内存: " + memObj + " MB";
                 string status = Util.GetStr(h, "status");
                 if (status == "ok")
                 {
