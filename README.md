@@ -1,4 +1,10 @@
-# AsrNode — 本地中文语音识别节点
+# AsrNode — 本地中文语音识别 绿色免安装版
+
+> Windows 10 / 11 64 位 · 绿色免安装，下载 `AsrNode-core.zip` 解压后双击 `AsrAgent.exe` 即用，无需安装 Python 与 ffmpeg。
+
+<div align="center">
+  <img src="docs/screenshot.png" alt="AsrNode 界面" width="880" />
+</div>
 
 Windows 桌面端语音识别节点：WinForms 外壳（`AsrAgent.exe`）+ 内嵌 Python 服务（FastAPI + sherpa-onnx，INT8 CPU 推理），
 通过 WSS 隧道接入公网网关，接收 `transcribe` 指令并把转写结果写回本地档案。
