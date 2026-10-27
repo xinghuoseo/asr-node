@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "sources": [
+    "https://github.com/OWNER/REPO/releases/download/TAG",
+    "https://ghfast.top/https://github.com/OWNER/REPO/releases/download/TAG",
+    "https://gh-proxy.com/https://github.com/OWNER/REPO/releases/download/TAG"
+  ],
+  "packs": {
+    "ffmpeg": {
+      "title": "基础包 (ffmpeg 音频转码)",
+      "zip": "ffmpeg.zip",
+      "size": 0,
+      "sha256": "",
+      "dest": "tools/",
+      "need": [ "tools/ffmpeg.exe" ]
+    },
+    "qwen3": {
+      "title": "精准 Qwen3-ASR-0.6B",
+      "zip": "model-qwen3.zip",
+      "size": 0,
+      "sha256": "",
+      "dest": "models/qwen3/",
+      "need": [
+        "models/qwen3/encoder.int8.onnx",
+        "models/qwen3/decoder.int8.onnx",
+        "models/qwen3/conv_frontend.onnx",
+        "models/qwen3/tokenizer/vocab.json",
+        "models/qwen3/tokenizer/merges.txt",
+        "models/qwen3/tokenizer/tokenizer_config.json"
+      ]
+    },
+    "sensevoice": {
+      "title": "快速 SenseVoice-Small",
+      "zip": "model-sensevoice.zip",
+      "size": 0,
+      "sha256": "",
+      "dest": "models/sensevoice/",
+      "need": [
+        "models/sensevoice/model.int8.onnx",
+        "models/sensevoice/tokens.txt"
+      ]
+    },
+    "paraformer": {
+      "title": "经典 Paraformer-zh + 标点",
+      "zip": "model-paraformer.zip",
+      "size": 0,
+      "sha256": "",
+      "dest": "models/paraformer/",
+      "need": [
+        "models/paraformer/model.int8.onnx",
+        "models/paraformer/tokens.txt",
+        "models/punc/model.onnx"
+      ]
+    }
+  }
+}

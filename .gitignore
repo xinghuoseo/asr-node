@@ -1,0 +1,31 @@
+# ---- 运行时依赖 / 模型 / 生成物 ----
+.venv/
+runtime/.venv/
+runtime/models/
+runtime/downloads/
+runtime/pyembed/
+release/
+dist/
+_backup/
+downloads/
+tools/
+models/
+
+# ---- 构建产物 ----
+*.exe
+*.pdb
+*.zip
+*.7z
+*.part
+
+# ---- 本机数据与密钥 ----
+agent_config.json
+records.json
+data/
+*.log
+asr_server.log
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/

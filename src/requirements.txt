@@ -1,0 +1,10 @@
+# FunASR 本地语音识别服务依赖 (sherpa-onnx INT8 版, 纯 CPU 推理)
+sherpa-onnx>=1.13
+fastapi>=0.115
+uvicorn[standard]>=0.34
+python-multipart>=0.0.20
+soundfile>=0.13
+numpy<2.3
+psutil>=6
+imageio-ffmpeg>=0.5
+websockets>=14
