@@ -814,24 +814,52 @@ namespace AsrAgent
             int pad = 12;
             int cw = ClientSize.Width;
             int ch = ClientSize.Height;
-            int gw = cw - pad * 2;
-            int recH = ch - 414;
+            int splitter = 6;
+            int sw = cw - pad * 2;      // 左右分栏总宽
+            int sh = ch - pad * 2;      // 左右分栏总高(贯穿整个窗口)
 
+            // 右栏(详情)宽度保持原样; 左栏(操作区)随窗口变宽
+            int rightW = 690;
+            int minLeft = 464;
+            int leftW = sw - splitter - rightW;
+            if (leftW < minLeft) leftW = minLeft;
+            if (sw - splitter - leftW < 400) leftW = sw - splitter - 400;
+
+            int lh = sh;                                 // 左栏可用高度
+            int gModelH = 126, gConnH = 118, gLogH = 130, gap = 8;
+            int recTop = gModelH + gap + gConnH + gap;
+            int recH = lh - recTop - gap - gLogH;
+
+            var split = new SplitContainer();
+            split.Orientation = Orientation.Vertical;
+            split.SetBounds(pad, pad, sw, sh);
+            split.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            split.SplitterWidth = splitter;
+            split.FixedPanel = FixedPanel.Panel2;   // 右栏固定宽度, 左栏随窗口变宽
+            split.Panel1MinSize = 440;
+            split.Panel2MinSize = 400;
+            try { split.SplitterDistance = leftW; } catch { }
+            Controls.Add(split);
+
+            // ===== 左栏 1/4: 模型 =====
             var gModel = new GroupBox();
             gModel.Text = "模型 (127.0.0.1:8088)";
-            gModel.SetBounds(pad, 12, gw, 112);
+            gModel.SetBounds(0, 0, leftW, gModelH);
             gModel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            int mcw = gModel.ClientSize.Width;
 
-            // 布局: 第一行 = [基础包] 识别模型 [下载该模型] ... [启动][停止]
-            //       第二行 = 状态 + 内存 + 自动启动 + 下载提示
+            // 第一行 = [基础包] 识别模型 [下载该模型]
+            // 第二行 = [启动][停止] 状态 + 内存
+            // 第三行 = 自动启动 + 下载提示
             _btnFfmpeg = new Button();
-            _btnFfmpeg.SetBounds(14, 24, 158, 30);
+            _btnFfmpeg.Text = "基础包";
+            _btnFfmpeg.SetBounds(12, 22, 92, 28);
             _btnFfmpeg.Click += delegate { DownloadPack("ffmpeg", null); };
 
             var lblModelSel = new Label();
-            lblModelSel.Text = "识别模型:";
+            lblModelSel.Text = "模型:";
             lblModelSel.TextAlign = ContentAlignment.MiddleLeft;
-            lblModelSel.SetBounds(182, 24, 68, 30);
+            lblModelSel.SetBounds(110, 22, 44, 28);
 
             _cmbModel = new ComboBox();
             _cmbModel.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -845,7 +873,7 @@ namespace AsrAgent
             if (_cfg.asr_model == "sensevoice") idx = 0;
             else if (_cfg.asr_model == "paraformer") idx = 2;
             _cmbModel.SelectedIndex = idx;
-            _cmbModel.SetBounds(252, 27, 190, 24);
+            _cmbModel.SetBounds(154, 25, 142, 22);
             _cmbModel.SelectedIndexChanged += delegate
             {
                 SaveConfig();
@@ -853,37 +881,40 @@ namespace AsrAgent
             };
 
             _btnModelDl = new Button();
-            _btnModelDl.SetBounds(450, 24, 158, 30);
+            _btnModelDl.Text = "下载该模型";
+            _btnModelDl.SetBounds(302, 22, 110, 28);
             _btnModelDl.Click += delegate
             {
                 string key = CurrentAsrModel();
                 DownloadPack(key, delegate { StartModel(); });
             };
 
-            int gmcw = gModel.ClientSize.Width;
             _btnStart = new Button();
-            _btnStart.Text = "启动模型";
-            _btnStart.SetBounds(gmcw - 226, 22, 100, 30);
-            _btnStart.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnStart.Text = "启动";
+            _btnStart.SetBounds(12, 56, 84, 28);
             _btnStart.Click += delegate { StartModel(); };
 
             _btnStop = new Button();
-            _btnStop.Text = "停止模型";
-            _btnStop.SetBounds(gmcw - 118, 22, 100, 30);
-            _btnStop.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _btnStop.Text = "停止";
+            _btnStop.SetBounds(102, 56, 84, 28);
             _btnStop.Click += delegate { StopModel(); };
 
             _lblModel = new Label();
             _lblModel.Text = "未运行";
-            _lblModel.SetBounds(14, 74, 240, 20);
+            _lblModel.AutoEllipsis = true;
+            _lblModel.TextAlign = ContentAlignment.MiddleLeft;
+            _lblModel.SetBounds(194, 56, mcw - 194 - 12 - 118, 28);
+            _lblModel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             _lblGpu = new Label();
             _lblGpu.Text = "内存: -";
-            _lblGpu.SetBounds(260, 74, 170, 20);
+            _lblGpu.TextAlign = ContentAlignment.MiddleRight;
+            _lblGpu.SetBounds(mcw - 106 - 12, 56, 106, 28);
+            _lblGpu.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             _chkAutoModel = new CheckBox();
             _chkAutoModel.Text = "随程序自动启动";
-            _chkAutoModel.SetBounds(436, 70, 160, 24);
+            _chkAutoModel.SetBounds(12, 92, 132, 24);
             _chkAutoModel.Checked = _cfg.auto_start_model;
             _chkAutoModel.CheckedChanged += delegate { SaveConfig(); };
 
@@ -891,7 +922,7 @@ namespace AsrAgent
             _lblDl.ForeColor = Color.DimGray;
             _lblDl.AutoEllipsis = true;
             _lblDl.TextAlign = ContentAlignment.MiddleLeft;
-            _lblDl.SetBounds(600, 74, gmcw - 616, 20);
+            _lblDl.SetBounds(148, 92, mcw - 160, 24);
             _lblDl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             gModel.Controls.Add(_btnFfmpeg);
@@ -904,35 +935,38 @@ namespace AsrAgent
             gModel.Controls.Add(_lblGpu);
             gModel.Controls.Add(_chkAutoModel);
             gModel.Controls.Add(_lblDl);
-            Controls.Add(gModel);
+            split.Panel1.Controls.Add(gModel);
 
+            // ===== 左栏 2/4: 服务器连接 =====
             var gConn = new GroupBox();
             gConn.Text = "服务器连接 (长连接隧道)";
-            gConn.SetBounds(pad, 130, gw, 118);
+            gConn.SetBounds(0, gModelH + gap, leftW, gConnH);
             gConn.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             int gccw = gConn.ClientSize.Width;
 
             var lblUrl = new Label();
             lblUrl.Text = "端点";
-            lblUrl.SetBounds(16, 30, 44, 20);
+            lblUrl.SetBounds(12, 26, 40, 24);
             _txtUrl = new TextBox();
             _txtUrl.Text = _cfg.server_url ?? "";
-            _txtUrl.SetBounds(64, 26, gccw - 288, 24);
+            _txtUrl.SetBounds(56, 24, gccw - 56 - 12 - 158 - 8, 26);
             _txtUrl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             var lblUrlTip = new Label();
             lblUrlTip.Text = "完整地址, 如 wss://host/path?token=xxx";
             lblUrlTip.ForeColor = Color.Gray;
-            lblUrlTip.SetBounds(16, 58, 460, 18);
+            lblUrlTip.AutoEllipsis = true;
+            lblUrlTip.SetBounds(12, 56, gccw - 24, 18);
+            lblUrlTip.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             _btnConnect = new Button();
             _btnConnect.Text = "连接";
-            _btnConnect.SetBounds(gccw - 200, 24, 92, 28);
+            _btnConnect.SetBounds(gccw - 158 - 12, 24, 76, 26);
             _btnConnect.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _btnConnect.Click += delegate { ConnectWs(); };
 
             _btnDisconnect = new Button();
             _btnDisconnect.Text = "断开";
-            _btnDisconnect.SetBounds(gccw - 102, 24, 92, 28);
+            _btnDisconnect.SetBounds(gccw - 76 - 12, 24, 76, 26);
             _btnDisconnect.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _btnDisconnect.Enabled = false;
             _btnDisconnect.Click += delegate { DisconnectWs(); };
@@ -940,11 +974,13 @@ namespace AsrAgent
             _lblConn = new Label();
             _lblConn.Text = "未连接";
             _lblConn.ForeColor = Color.Gray;
-            _lblConn.SetBounds(16, 84, 400, 20);
+            _lblConn.AutoEllipsis = true;
+            _lblConn.SetBounds(12, 84, gccw - 12 - 12 - 210, 22);
+            _lblConn.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             _chkAutoConn = new CheckBox();
             _chkAutoConn.Text = "模型就绪后自动连接";
-            _chkAutoConn.SetBounds(gccw - 220, 82, 210, 24);
+            _chkAutoConn.SetBounds(gccw - 198 - 12, 82, 198, 24);
             _chkAutoConn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _chkAutoConn.Checked = _cfg.auto_connect;
             _chkAutoConn.CheckedChanged += delegate { SaveConfig(); };
@@ -956,56 +992,70 @@ namespace AsrAgent
             gConn.Controls.Add(_btnDisconnect);
             gConn.Controls.Add(_lblConn);
             gConn.Controls.Add(_chkAutoConn);
-            Controls.Add(gConn);
+            split.Panel1.Controls.Add(gConn);
 
+            // ===== 左栏 3/4: 转写建档 =====
             var gRec = new GroupBox();
-            gRec.Text = "转写建档 (左侧选记录, 右侧看分句 / 说话人 / 时间轴)";
-            gRec.SetBounds(pad, 254, gw, recH);
+            gRec.Text = "转写建档 (选中记录看右侧详情)";
+            gRec.SetBounds(0, recTop, leftW, recH);
             gRec.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             _btnTranscribe = new Button();
             _btnTranscribe.Text = "选择音频转写";
-            _btnTranscribe.SetBounds(16, 24, 120, 30);
+            _btnTranscribe.SetBounds(12, 24, 124, 30);
             _btnTranscribe.Click += delegate { PickAndTranscribe(); };
 
             _btnDelete = new Button();
             _btnDelete.Text = "删除所选";
-            _btnDelete.SetBounds(144, 24, 100, 30);
+            _btnDelete.SetBounds(144, 24, 96, 30);
             _btnDelete.Click += delegate { DeleteSelected(); };
-
-            // 左: 记录列表(固定宽度)   右: 分句详情(随窗口变宽)
-            var split = new SplitContainer();
-            split.Orientation = Orientation.Vertical;
-            split.SetBounds(16, 62, gRec.ClientSize.Width - 32, recH - 74);
-            split.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-            split.SplitterWidth = 6;
-            split.FixedPanel = FixedPanel.Panel1;
-            split.Panel1MinSize = 360;
-            split.Panel2MinSize = 360;
-            int spW = gRec.ClientSize.Width - 32;
-            int sp = 430;
-            if (sp > spW - 360 - split.SplitterWidth) sp = spW - 360 - split.SplitterWidth;
-            if (sp < 360) sp = 360;
-            try { split.SplitterDistance = sp; } catch { }
 
             _lv = new ListView();
             _lv.View = View.Details;
             _lv.FullRowSelect = true;
             _lv.HideSelection = false;
-            _lv.Dock = DockStyle.Fill;
-            _lv.Columns.Add("时间", 112);
+            _lv.SetBounds(12, 62, leftW - 24, recH - 74);
+            _lv.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            _lv.Columns.Add("时间", 104);
             _lv.Columns.Add("来源", 44);
-            _lv.Columns.Add("文件", 148);
-            _lv.Columns.Add("时长(s)", 54);
+            _lv.Columns.Add("文件", 140);
+            _lv.Columns.Add("时长(s)", 48);
             _lv.Columns.Add("说话人", 54);
             _lv.SelectedIndexChanged += delegate { ShowRecordInPanel(); };
             _lv.DoubleClick += delegate { ShowRecordInPanel(); };
-            split.Panel1.Controls.Add(_lv);
+
+            gRec.Controls.Add(_btnTranscribe);
+            gRec.Controls.Add(_btnDelete);
+            gRec.Controls.Add(_lv);
+            split.Panel1.Controls.Add(gRec);
+
+            // ===== 左栏 4/4: 运行日志 =====
+            var gLog = new GroupBox();
+            gLog.Text = "运行日志";
+            gLog.SetBounds(0, lh - gLogH, leftW, gLogH);
+            gLog.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+
+            _txtLog = new TextBox();
+            _txtLog.Multiline = true;
+            _txtLog.ReadOnly = true;
+            _txtLog.ScrollBars = ScrollBars.Vertical;
+            _txtLog.BackColor = Color.White;
+            _txtLog.SetBounds(12, 20, leftW - 24, gLogH - 32);
+            _txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            _txtLog.Font = new Font("Consolas", 9f);
+            gLog.Controls.Add(_txtLog);
+            split.Panel1.Controls.Add(gLog);
+
+            // ===== 右栏: 分句详情(贯穿整个窗口高度) =====
+            var gDetail = new GroupBox();
+            gDetail.Text = "详情 (分句 / 说话人 / 时间轴)";
+            gDetail.Dock = DockStyle.Fill;
+            gDetail.Padding = new Padding(12, 6, 12, 12);
 
             _lblDetail = new Label();
             _lblDetail.Text = "详情: 未选择记录";
             _lblDetail.Dock = DockStyle.Top;
-            _lblDetail.Height = 44;
+            _lblDetail.Height = 32;
             _lblDetail.TextAlign = ContentAlignment.MiddleLeft;
             _lblDetail.Font = new Font("Microsoft YaHei", 9f, FontStyle.Bold);
             _lblDetail.AutoEllipsis = true;
@@ -1019,29 +1069,9 @@ namespace AsrAgent
             _txtDetail.HideSelection = false;
 
             // 先加 Fill, 再加 Top: 后加的先参与停靠, 保证 Top 不被 Fill 覆盖
-            split.Panel2.Controls.Add(_txtDetail);
-            split.Panel2.Controls.Add(_lblDetail);
-
-            gRec.Controls.Add(_btnTranscribe);
-            gRec.Controls.Add(_btnDelete);
-            gRec.Controls.Add(split);
-            Controls.Add(gRec);
-
-            var gLog = new GroupBox();
-            gLog.Text = "运行日志";
-            gLog.SetBounds(pad, ch - 152, gw, 140);
-            gLog.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-
-            _txtLog = new TextBox();
-            _txtLog.Multiline = true;
-            _txtLog.ReadOnly = true;
-            _txtLog.ScrollBars = ScrollBars.Vertical;
-            _txtLog.BackColor = Color.White;
-            _txtLog.SetBounds(14, 20, gLog.ClientSize.Width - 28, 108);
-            _txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-            _txtLog.Font = new Font("Consolas", 9f);
-            gLog.Controls.Add(_txtLog);
-            Controls.Add(gLog);
+            gDetail.Controls.Add(_txtDetail);
+            gDetail.Controls.Add(_lblDetail);
+            split.Panel2.Controls.Add(gDetail);
         }
 
         private void BuildTray()
