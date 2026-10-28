@@ -63,6 +63,15 @@ $exe = Join-Path $app "AsrAgent.exe"
     /out:"$exe" "$(Join-Path $src 'Agent.cs')"
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exe)) { throw "编译失败" }
 
+# 极简版: 单个小 exe, 首次运行下载并解压 AsrNode-core.zip
+Write-Output "  compile AsrNode-lite.exe ..."
+$lite = Join-Path $out "AsrNode-lite.exe"
+& $csc /nologo /target:winexe /codepage:65001 /win32icon:"$(Join-Path $src 'app.ico')" `
+    /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+    /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll `
+    /out:"$lite" "$(Join-Path $src 'Lite.cs')"
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $lite)) { throw "极简版编译失败" }
+
 # ---------- [3/8] 程序文件 ----------
 Write-Output "[3/8] copy app files ..."
 foreach ($f in @("asr_server.py", "transcode.py", "requirements.txt")) {
@@ -233,6 +242,7 @@ function MB([long]$b) { return [math]::Round($b / 1MB, 1) }
 Write-Output ""
 Write-Output "== done =="
 Write-Output ("core   : {0}  ({1} MB)" -f $core, (MB (Get-Item $core).Length))
+Write-Output ("lite   : {0}  ({1} KB)" -f $lite, [math]::Round((Get-Item $lite).Length / 1KB))
 foreach ($f in Get-ChildItem $assets -Filter *.zip) {
     Write-Output ("asset  : {0}  ({1} MB)  sha256={2}" -f $f.Name, (MB $f.Length),
         (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower())
