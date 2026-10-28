@@ -1,6 +1,7 @@
 # AsrNode — 本地中文语音识别 绿色免安装版
 
-> Windows 10 / 11 64 位 · 绿色免安装，下载 `AsrNode-core.zip` 解压后双击 `AsrAgent.exe` 即用，无需安装 Python 与 ffmpeg。
+> Windows 10 / 11 64 位 · 绿色免安装。只要单个 exe 就下载 `AsrNode-lite.exe`（首次运行自动拉取运行环境）；
+> 想完全离线开箱即用，下载 `AsrNode-core.zip` 解压后双击 `AsrAgent.exe`。都无需安装 Python 与 ffmpeg。
 
 <div align="center">
   <img src="docs/screenshot.png" alt="AsrNode 界面" width="880" />
@@ -9,8 +10,21 @@
 Windows 桌面端语音识别节点：WinForms 外壳（`AsrAgent.exe`）+ 内嵌 Python 服务（FastAPI + sherpa-onnx，INT8 CPU 推理），
 通过 WSS 隧道接入公网网关，接收 `transcribe` 指令并把转写结果写回本地档案。
 
+## 两种下载方式
+
+| 下载 | 体积 | 说明 |
+| --- | --- | --- |
+| `AsrNode-lite.exe` | 约 28 KB | **极简版**，就一个 exe。放到任意空目录双击运行，首次自动下载运行环境（约 64 MB）并解压，之后每次启动都不再联网 |
+| `AsrNode-core.zip` | 约 64 MB | **完整包**，解压即用，首次启动无需联网 |
+
+两者装好后的程序和功能完全一样，用哪个都行。
+
 ## 快速开始（普通用户）
 
+**极简版**：把 `AsrNode-lite.exe` 放进一个空文件夹（例如 `D:\AsrNode`），双击运行，点"开始下载并安装"，
+等待下载 + 解压完成会自动启动主程序。首次需要联网，之后直接双击即可离线使用。
+
+**完整包**：
 1. 到 Releases 下载 `AsrNode-core.zip`，解压到任意目录（路径不要含特殊字符）。
 2. 双击 `AsrAgent.exe`。
 3. 首次使用点"下载基础包"，安装 ffmpeg（约 84 MB，装好后按钮变灰显示"ffmpeg 已就绪"）。
@@ -19,6 +33,9 @@ Windows 桌面端语音识别节点：WinForms 外壳（`AsrAgent.exe`）+ 内�
 6. 左侧列表选一条记录，右侧查看按"分句 / 说话人 / 时间轴"排版的全文。
 
 要求：Windows 10/11 64 位。
+
+> 极简版提示"下载失败"时，可先手动下载 `AsrNode-core.zip` 解压到同一目录，再双击 `AsrNode-lite.exe`（检测到已安装会直接启动）。
+> 下载中断可以直接点"重试"，会从断点续传。
 
 ### 三种模型
 
@@ -64,7 +81,7 @@ gh release create v1.0.0 dist\AsrNode-core.zip dist\assets\*.zip -t "AsrNode v1.
 ## 目录结构
 
 ```
-src\        Agent.cs（WinForms 外壳）asr_server.py（本地推理服务）build_release.ps1 models.json（下载清单模板）
+src\        Agent.cs（WinForms 外壳）Lite.cs（极简版引导器）asr_server.py（本地推理服务）build_release.ps1 models.json（下载清单模板）
 runtime\    开发机运行目录：.venv\ + models\ + agent_config.json + records.json
 data\       音频素材
 dist\       出包产物（已忽略）
