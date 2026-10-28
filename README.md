@@ -69,15 +69,6 @@ dist\assets\model-paraformer.zip 经典模型    -> models\paraformer\* + models
 dist\AsrNode\                    未压缩主包（可直接运行调试）
 ```
 
-发布到 GitHub Release：
-
-```powershell
-gh release create v1.0.0 dist\AsrNode-core.zip dist\assets\*.zip -t "AsrNode v1.0.0"
-```
-
-> 国内网络若 `github.com:443` 不通，可用镜像下载 core 包，或给 git 配 SSH over 443：
-> `git remote set-url origin git@github.com:xinghuoseo/asr-node.git`（`~/.ssh/config` 里把 github.com 指向 `ssh.github.com:443`）。
-
 ## 目录结构
 
 ```

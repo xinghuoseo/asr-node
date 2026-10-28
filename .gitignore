@@ -1,9 +1,6 @@
 # ---- 运行时依赖 / 模型 / 生成物 ----
 .venv/
-runtime/.venv/
-runtime/models/
-runtime/downloads/
-runtime/pyembed/
+runtime/
 release/
 dist/
 _backup/

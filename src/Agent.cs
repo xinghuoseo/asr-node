@@ -360,6 +360,12 @@ namespace AsrAgent
                     File.Delete(partFile);
                     have = 0;
                 }
+                // .part 已是完整文件(上次下载完成但后续步骤中断), 无需再请求: AddRange(have) 会得到 416
+                if (expectSize > 0 && have == expectSize)
+                {
+                    if (onProgress != null) onProgress(have, expectSize);
+                    return null;
+                }
 
                 var req = (HttpWebRequest)WebRequest.Create(url);
                 req.Method = "GET";
@@ -369,7 +375,24 @@ namespace AsrAgent
                 req.AllowAutoRedirect = true;
                 if (have > 0) req.AddRange(have);
 
-                using (var resp = (HttpWebResponse)req.GetResponse())
+                HttpWebResponse resp;
+                try
+                {
+                    resp = (HttpWebResponse)req.GetResponse();
+                }
+                catch (WebException we)
+                {
+                    var hr = we.Response as HttpWebResponse;
+                    if (have > 0 && hr != null &&
+                        hr.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                    {
+                        if (onProgress != null) onProgress(have, have);
+                        return null;
+                    }
+                    throw;
+                }
+
+                using (resp)
                 {
                     bool append = have > 0 && resp.StatusCode == HttpStatusCode.PartialContent;
                     if (!append) have = 0;   // 服务器不支持 Range, 从头重下
@@ -687,7 +710,7 @@ namespace AsrAgent
                 string fname = filename;
                 if (string.IsNullOrEmpty(fname))
                 {
-                    fname = "remote_" + id.Substring(0, 8) + ".wav";
+                    fname = "remote_" + id.Substring(0, Math.Min(8, id.Length)) + ".wav";
                     if (!string.IsNullOrEmpty(url))
                     {
                         try { fname = Path.GetFileName(new Uri(url).LocalPath); } catch { }
