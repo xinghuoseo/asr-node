@@ -4,12 +4,13 @@
 # 模型: Paraformer-zh(转写) + Silero-VAD(切分) + ct-transformer(标点)
 #       + pyannote-seg(分段) + CAM++(声纹) 聚类 -> 说话人分离
 # 特点: 全 INT8, 纯 CPU 推理, 常驻内存约 1GB (原 PyTorch 版 2.9GB)
-# 监听: 127.0.0.1:8088  (仅本机可访问, 由 GUI Agent / 远程隧道调用)
+# 监听: 0.0.0.0:38088  (局域网可访问, 端口可用环境变量 ASR_PORT 覆盖)
 #
 # API:
-#   GET  /health      健康检查(状态/进程内存)
+#   GET  /health      健康检查(状态/模型/进程内存)
 #   POST /transcribe  上传 wav 文件, 返回带说话人标签的转写结果
 #   POST /transcribe_b64  JSON {"audio_b64","format","id"}, 隧道转发用
+#   POST /shutdown    仅本机可调用, 供 GUI 停止服务
 #
 # 隧道协议(服务器端以后实现):
 #   请求  {"type":"transcribe","id":"<uuid>","audio_b64":"...","format":"wav"}
@@ -31,7 +32,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 logging.basicConfig(
@@ -46,8 +47,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("asr_server")
 
-HOST = "127.0.0.1"
-PORT = 8088
+HOST = os.environ.get("ASR_HOST", "0.0.0.0")      # 0.0.0.0 = 局域网可访问
+PORT = int(os.environ.get("ASR_PORT", "38088"))
 SAMPLE_RATE = 16000
 MODELS = Path(__file__).resolve().parent / "models"
 
@@ -372,8 +373,11 @@ async def transcribe(file: UploadFile):
 
 
 @app.post("/shutdown")
-def shutdown():
-    """供 GUI 停止本服务 (仅监听 127.0.0.1, 无外部暴露风险)。"""
+def shutdown(request: Request):
+    """供 GUI 停止本服务; 服务已对局域网开放, 因此仅允许本机调用。"""
+    host = request.client.host if request.client else ""
+    if host not in ("127.0.0.1", "::1"):
+        raise HTTPException(403, "仅允许本机调用")
     os._exit(0)
 
 

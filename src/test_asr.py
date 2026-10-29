@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 转写验证脚本: 用 data/ai_news_audio 里的音频测试 8088 服务
+# 转写验证脚本: 用 data/ai_news_audio 里的音频测试 38088 服务
 # 用法: .venv\Scripts\python.exe test_asr.py <音频路径, 缺省取双主播样段>
 import base64
 import json
@@ -14,7 +14,7 @@ def main():
     print("INPUT:", path, flush=True)
     audio = base64.b64encode(Path(path).read_bytes()).decode("ascii")
     req = urllib.request.Request(
-        "http://127.0.0.1:8088/transcribe_b64",
+        "http://127.0.0.1:38088/transcribe_b64",
         data=json.dumps({"audio_b64": audio, "format": Path(path).suffix.lstrip(".") or "mp3"}).encode(),
         headers={"Content-Type": "application/json"},
         method="POST",

@@ -1,7 +1,7 @@
 // ============================================================
 // 语音识别 Agent (C# WinForms 版)
 // 功能:
-//   1. 启动/停止本地模型服务 (asr_server.py, 127.0.0.1:8088)
+//   1. 启动/停止本地模型服务 (asr_server.py, 0.0.0.0:38088, 局域网可访问)
 //   2. 按需下载: 基础包(ffmpeg) 与 识别模型, 多源测速 + 断点续传 + sha256 校验
 //      下载完成后自动重新加载模型
 //   3. 连接服务器: wss:// 端点 + token, 长连接自动重连
@@ -46,7 +46,7 @@ namespace AsrAgent
         public static string ToolsDir;       // 基础包(ffmpeg)解压目录
         public static string ModelsDir;      // 模型解压目录
         public static string ManifestPath;   // models.json 下载清单
-        public const string Api = "http://127.0.0.1:8088";
+        public const string Api = "http://127.0.0.1:38088";
         public static readonly JavaScriptSerializer Js = CreateSerializer();
 
         private static JavaScriptSerializer CreateSerializer()
@@ -866,7 +866,7 @@ namespace AsrAgent
 
             // ===== 左栏 1/4: 模型 =====
             var gModel = new GroupBox();
-            gModel.Text = "模型 (127.0.0.1:8088)";
+            gModel.Text = "模型 (端口 38088)";
             gModel.SetBounds(0, 0, leftW, gModelH);
             gModel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             int mcw = gModel.ClientSize.Width;
@@ -1205,7 +1205,7 @@ namespace AsrAgent
                 return;
             }
 
-            // 探测 8088 已有实例: 同模型直接复用; 不同模型自动停旧起新
+            // 探测 38088 已有实例: 同模型直接复用; 不同模型自动停旧起新
             string runningModel = null;
             bool alive = false;
             try
@@ -1225,7 +1225,7 @@ namespace AsrAgent
                 {
                     _modelExternal = true;
                     _lblModel.Text = "运行中 (复用已运行实例)";
-                    UiLog("[模型] 检测到 8088 已有健康模型服务(" + runningModel + "), 直接复用");
+                    UiLog("[模型] 检测到 38088 已有健康模型服务(" + runningModel + "), 直接复用");
                     return;
                 }
                 // 模型不同: 停旧 + 等端口释放 + 用所选模型重启
@@ -1591,7 +1591,7 @@ namespace AsrAgent
                 string json = t.Result;
                 if (json == null)
                 {
-                    // 8088 无健康服务
+                    // 38088 无健康服务
                     if (_modelExternal)
                     {
                         _modelExternal = false;

@@ -82,4 +82,4 @@ dist\       出包产物（已忽略）
 
 - 整个目录可整体搬迁：程序内路径均基于 exe 所在目录与 `asr_server.py` 所在目录解析。
 - `agent_config.json` 保存服务器地址与 token，`records.json` 保存转写档案，均为本机文件，已在 `.gitignore` 中排除。
-- 本地服务监听 `127.0.0.1:8088`，接口 `/health`、`/transcribe`、`/transcribe_b64`、`/shutdown`。
+- 本地服务监听 `0.0.0.0:38088`（局域网可访问），接口 `/health`、`/transcribe`、`/transcribe_b64`、`/shutdown`（`/shutdown` 仅本机可调用）。局域网调用说明见 [局域网API调用文档](docs/局域网API调用文档.md)。
