@@ -84,7 +84,7 @@ namespace AsrAgent
         public string server_url = "";
         public string token = "";
         public bool auto_start_model = true;
-        public bool auto_connect = true;
+        public bool auto_connect = false;   // 默认不自动连接, 由用户手动勾选
         public bool show_token = false;
         public string asr_model = "qwen3";   // qwen3(精准,默认) | sensevoice(快) | paraformer
 
@@ -758,6 +758,7 @@ namespace AsrAgent
         private bool _modelExternal;   // 模型服务由外部启动(孤儿/手动), GUI 仅接管状态
         private Thread _wsThread;
         private bool _autoConnectFired;
+        private bool _accWarned;
         private bool _balloonShown;
 
         private Button _btnStart, _btnStop, _btnConnect, _btnDisconnect,
@@ -1303,6 +1304,7 @@ namespace AsrAgent
                 UiStatusModel("未运行");
             };
             UiStatusModel("加载中... (" + asrModel + ")");
+            _accWarned = false;
             UiLog("[模型] 启动 asr_server.py (模型=" + asrModel + ")");
         }
 
@@ -1601,6 +1603,12 @@ namespace AsrAgent
                     else if (_proc != null && !_proc.HasExited)
                     {
                         _lblModel.Text = "加载中...";
+                        // 进程在跑但端口一直无响应: 多为 asr_server.py 与 exe 版本不一致或端口被占用
+                        if (!_accWarned && (DateTime.Now - _proc.StartTime).TotalSeconds > 40)
+                        {
+                            _accWarned = true;
+                            UiLog("[模型] 38088 端口无响应, 请确认 asr_server.py 与 AsrAgent.exe 版本一致, 或该端口被其他程序占用");
+                        }
                     }
                     return;
                 }
