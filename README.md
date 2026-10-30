@@ -52,7 +52,7 @@ Windows 桌面端语音识别节点：WinForms 外壳（`AsrAgent.exe`）+ 内�
 ```powershell
 cd src
 powershell -NoProfile -ExecutionPolicy Bypass -File build_release.ps1 `
-  -Owner xinghuoseo -Repo asr-node -Tag v1.0.0
+  -Owner xinghuoseo -Repo asr-node -Tag v1.0.1
 ```
 
 便携 Python 会依次从 `-PyEmbedDir`、本机缓存 `runtime\pyembed\`、上次构建产物中查找，都没有时自动下载可嵌入版。
