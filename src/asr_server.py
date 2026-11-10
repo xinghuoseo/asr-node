@@ -34,6 +34,7 @@ import soundfile as sf
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 logging.basicConfig(
     level=logging.INFO,
@@ -356,7 +357,8 @@ async def transcribe(file: UploadFile):
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
-        result = _do_transcribe(path)
+        # 转写是纯 CPU 阻塞操作, 放到线程池执行, 避免占满事件循环导致 /health 超时
+        result = await run_in_threadpool(_do_transcribe, path)
     except HTTPException:
         raise
     except Exception as e:

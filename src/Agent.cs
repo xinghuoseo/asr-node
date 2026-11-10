@@ -510,6 +510,8 @@ namespace AsrAgent
         private readonly MainForm _ui;
         private readonly string _url;
         private volatile bool _stop;
+        private int _busy;   // 正在执行的隧道转写数, GUI 据此在转写期间跳过健康探测
+        public int Busy { get { return _busy; } }
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private ClientWebSocket _ws;
 
@@ -670,6 +672,7 @@ namespace AsrAgent
             Dictionary<string, object> payload, string id, out string err)
         {
             err = null;
+            Interlocked.Increment(ref _busy);
             string b64 = Util.GetStr(payload, "audio_b64");
             string url = Util.GetStr(payload, "audio_url");
             string fmt = Util.GetStr(payload, "format") ?? "wav";
@@ -726,6 +729,7 @@ namespace AsrAgent
             }
             finally
             {
+                Interlocked.Decrement(ref _busy);
                 try { if (tmp != null && File.Exists(tmp)) File.Delete(tmp); } catch { }
             }
         }
@@ -760,6 +764,9 @@ namespace AsrAgent
         private bool _autoConnectFired;
         private bool _accWarned;
         private bool _balloonShown;
+        private bool _transcribeReady;     // 本地服务已就绪(健康探测 status=ok)
+        private bool _healthOk;            // 健康探测曾成功过
+        private int _healthFails;          // 连续探测失败次数(避免单次抖动误判)
 
         private Button _btnStart, _btnStop, _btnConnect, _btnDisconnect,
             _btnTranscribe, _btnDelete, _btnFfmpeg, _btnModelDl;
@@ -1028,6 +1035,7 @@ namespace AsrAgent
             _btnTranscribe = new Button();
             _btnTranscribe.Text = "选择音频转写";
             _btnTranscribe.SetBounds(12, 24, 124, 30);
+            _btnTranscribe.Enabled = false;   // 模型就绪后再由 SetServiceReady 打开
             _btnTranscribe.Click += delegate { PickAndTranscribe(); };
 
             _btnDelete = new Button();
@@ -1226,6 +1234,7 @@ namespace AsrAgent
                 {
                     _modelExternal = true;
                     _lblModel.Text = "运行中 (复用已运行实例)";
+                    SetServiceReady(true);
                     UiLog("[模型] 检测到 38088 已有健康模型服务(" + runningModel + "), 直接复用");
                     return;
                 }
@@ -1301,10 +1310,14 @@ namespace AsrAgent
             _proc.Exited += delegate
             {
                 UiLog("[模型] 进程退出");
+                SetServiceReady(false);
                 UiStatusModel("未运行");
             };
             UiStatusModel("加载中... (" + asrModel + ")");
             _accWarned = false;
+            _healthOk = false;
+            _healthFails = 0;
+            SetServiceReady(false);
             UiLog("[模型] 启动 asr_server.py (模型=" + asrModel + ")");
         }
 
@@ -1313,6 +1326,7 @@ namespace AsrAgent
             if (_proc != null && !_proc.HasExited)
             {
                 try { _proc.Kill(); } catch { }
+                SetServiceReady(false);
                 UiLog("[模型] 已请求停止");
                 return;
             }
@@ -1332,6 +1346,7 @@ namespace AsrAgent
                 });
                 _modelExternal = false;
                 _lblModel.Text = "未运行";
+                SetServiceReady(false);
                 UiLog("[模型] 已请求外部实例停止");
             }
         }
@@ -1580,8 +1595,25 @@ namespace AsrAgent
                 UiLog("[下载] " + Net.Mb(got) + " / " + Net.Mb(total) + " MB (" + pct + "%)");
         }
 
+        // 统一开关"选择音频转写"按钮, 只有服务就绪(且当前没在转写)才允许点击
+        private void SetServiceReady(bool ready)
+        {
+            if (InvokeRequired)
+            {
+                try { BeginInvoke((MethodInvoker)delegate { SetServiceReady(ready); }); }
+                catch { }
+                return;
+            }
+            _transcribeReady = ready;
+            if (_btnTranscribe != null) _btnTranscribe.Enabled = ready && !_transcribing;
+        }
+
         private void OnHealthTick(object s, EventArgs e)
         {
+            // 转写时服务端在跑 CPU 推理, 健康探测容易超时;
+            // 此时跳过探测, 避免把"正在转写"误判成"端口无响应/版本不一致"
+            if (_transcribing || (_ws != null && _ws.Busy > 0)) return;
+
             // 无论模型由本 GUI 启动还是外部实例(孤儿/手动), 都持续探测健康状态
             var task = Task.Run(delegate
             {
@@ -1593,7 +1625,11 @@ namespace AsrAgent
                 string json = t.Result;
                 if (json == null)
                 {
-                    // 38088 无健康服务
+                    // 连续 3 次(约 15 秒)都失败才判定服务不可用, 避免单次抖动误报
+                    _healthFails++;
+                    if (_healthFails < 3 && _healthOk) return;
+                    _healthOk = false;
+
                     if (_modelExternal)
                     {
                         _modelExternal = false;
@@ -1604,14 +1640,23 @@ namespace AsrAgent
                     {
                         _lblModel.Text = "加载中...";
                         // 进程在跑但端口一直无响应: 多为 asr_server.py 与 exe 版本不一致或端口被占用
-                        if (!_accWarned && (DateTime.Now - _proc.StartTime).TotalSeconds > 40)
+                        if (!_accWarned && !_healthOk &&
+                            (DateTime.Now - _proc.StartTime).TotalSeconds > 40)
                         {
                             _accWarned = true;
                             UiLog("[模型] 38088 端口无响应, 请确认 asr_server.py 与 AsrAgent.exe 版本一致, 或该端口被其他程序占用");
                         }
                     }
+                    else
+                    {
+                        _lblModel.Text = "未运行";
+                    }
+                    SetServiceReady(false);
                     return;
                 }
+                _healthFails = 0;
+                _healthOk = true;
+
                 var h = Globals.Js.Deserialize<Dictionary<string, object>>(json);
                 if (h == null) return;
 
@@ -1639,6 +1684,7 @@ namespace AsrAgent
                     {
                         _lblModel.Text = "运行中 (就绪)";
                     }
+                    SetServiceReady(true);
                     if (modelChanged) UpdateDownloadHints();
                     if (_chkAutoConn.Checked && _ws == null && !_autoConnectFired)
                     {
@@ -1649,6 +1695,7 @@ namespace AsrAgent
                 else
                 {
                     _lblModel.Text = "加载中...";
+                    SetServiceReady(false);
                 }
             });
         }
@@ -1726,10 +1773,10 @@ namespace AsrAgent
             o.OriginalPath = path;
             try
             {
-                // 模型未启动时给出明确提示
-                if (_proc == null || _proc.HasExited)
+                // 模型未就绪时直接给出明确提示, 不进入 http 请求(否则会看到"无法连接到远程服务器")
+                if (!_transcribeReady)
                 {
-                    o.Error = "模型未启动, 请先点击\"启动模型\"并等待其就绪";
+                    o.Error = "模型服务尚未就绪, 请先点\"启动\"并等待状态变为 运行中 (就绪) 后再转写";
                     return o;
                 }
 
@@ -1833,6 +1880,12 @@ namespace AsrAgent
         private void PickAndTranscribe()
         {
             if (_transcribing) return;
+            if (!_transcribeReady)
+            {
+                MessageBox.Show("模型尚未就绪, 请先点\"启动\"并等待状态变为 运行中 (就绪) 后再转写。",
+                    "提示");
+                return;
+            }
             using (var dlg = new OpenFileDialog())
             {
                 dlg.Title = "选择音频/视频 (非 wav 会自动转码)";
@@ -1850,7 +1903,7 @@ namespace AsrAgent
                 .ContinueWith(delegate(Task<TranscribeOutcome> t)
                 {
                     _transcribing = false;
-                    _btnTranscribe.Enabled = true;
+                    SetServiceReady(_transcribeReady);
                     var o = t.Result;
                     if (o.Error != null)
                     {
